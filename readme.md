@@ -8,7 +8,7 @@ cd digital-ocean-test
 composer install
 ```
 
-Generate the APP_Key:
+Rename your .env.example to .env file and generate the APP_Key:
 
 ```
 php artisan key:generate
