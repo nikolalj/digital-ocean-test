@@ -32,7 +32,7 @@ class DigitalOceanController extends Controller
      */
     public function handleProviderCallback(Request $request)
     {
-        if(! $request->has('code'))
+        if( ! $request->has('code'))
         {
             return redirect('/');
         }
@@ -43,6 +43,7 @@ class DigitalOceanController extends Controller
         // request access token
         $url = 'https://cloud.digitalocean.com/v1/oauth/token?client_id=' . env('DIGITALOCEAN_KEY') . '&client_secret=' .
             env('DIGITALOCEAN_SECRET') . '&code=' . $code . '&grant_type=authorization_code&redirect_uri=' . env('DIGITALOCEAN_REDIRECT_URI');
+
         $handle = curl_init($url);
         curl_setopt($handle, CURLOPT_POST, true);
         curl_setopt($handle, CURLOPT_RETURNTRANSFER, 1);
@@ -50,6 +51,12 @@ class DigitalOceanController extends Controller
         curl_close($handle);
 
         $jsonResponse = json_decode($response, true);
+
+        if( ! array_key_exists('access_token', $jsonResponse))
+        {
+            return redirect('/');
+        }
+
         $token = $jsonResponse['access_token'];
         session()->put('token', $token);
 
@@ -57,7 +64,7 @@ class DigitalOceanController extends Controller
     }
 
     /**
-     * Creates a new Droplet using the user's Access Token and Stream password
+     * Creates a new Droplet using the user's Access Token and Stream Password
      *
      * @param Request $request
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
@@ -67,6 +74,12 @@ class DigitalOceanController extends Controller
         $this->validate($request,[
             'streampass' => 'required',
         ]);
+
+        // if there is no token redirect to home page
+        if( ! session()->has('token'))
+        {
+            return redirect('/');
+        }
 
         $streampass = $request->get('streampass');
         $token = session('token');
@@ -153,4 +166,5 @@ class DigitalOceanController extends Controller
 
         return $digitalocean->droplet()->getById($id);
     }
+
 }
