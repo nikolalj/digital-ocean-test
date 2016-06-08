@@ -97,10 +97,13 @@ class DigitalOceanController extends Controller
         $maxId=0;
         foreach($droplets as $droplet)
         {
-            $nameArray = explode('-',$droplet->name);
-            if(count($nameArray)>1 && $nameArray[1]>$maxId)
+            if(strpos($droplet->name, 'creek-icecast') !== FALSE)
             {
-                $maxId = $nameArray[1];
+                $nameArray = explode('-',$droplet->name);
+                if(count($nameArray)>2 && $nameArray[2]>$maxId)
+                {
+                    $maxId = $nameArray[2];
+                }
             }
         }
 
