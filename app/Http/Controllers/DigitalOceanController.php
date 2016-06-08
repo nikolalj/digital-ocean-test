@@ -153,7 +153,25 @@ class DigitalOceanController extends Controller
                     - wget -q http://r.creek.fm/icecast-server/install.sh -O icecast-install.sh; bash icecast-install.sh -p ' . $streampass;
 
         // create a droplet
-        $droplet = $digitalocean->droplet()->create($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
+        try {
+            $droplet = $digitalocean->droplet()->create($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
+        } catch (\Exception $e) {
+
+            sleep(5);
+            \Log::info('Create Droplet exception! Retrying...');
+
+            // request access token
+            $token = $this->getAccessToken();
+
+            if(empty($token))
+            {
+                return redirect('/');
+            }
+
+            session()->put('token', $token);
+            $this->createDroplet($token, $streampass);
+            return;
+        }
 
         return $droplet;
     }
