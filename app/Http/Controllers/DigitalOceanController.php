@@ -39,25 +39,16 @@ class DigitalOceanController extends Controller
 
         // get the code
         $code = $request->get('code');
+        session()->put('code', $code);
 
         // request access token
-        $url = 'https://cloud.digitalocean.com/v1/oauth/token?client_id=' . env('DIGITALOCEAN_KEY') . '&client_secret=' .
-            env('DIGITALOCEAN_SECRET') . '&code=' . $code . '&grant_type=authorization_code&redirect_uri=' . env('DIGITALOCEAN_REDIRECT_URI');
+        $token = $this->getAccessToken();
 
-        $handle = curl_init($url);
-        curl_setopt($handle, CURLOPT_POST, true);
-        curl_setopt($handle, CURLOPT_RETURNTRANSFER, 1);
-        $response = curl_exec($handle);
-        curl_close($handle);
-
-        $jsonResponse = json_decode($response, true);
-
-        if( ! isset($jsonResponse['access_token']))
+        if(empty($token))
         {
             return redirect('/');
         }
 
-        $token = $jsonResponse['access_token'];
         session()->put('token', $token);
 
         return view('create');
@@ -115,8 +106,17 @@ class DigitalOceanController extends Controller
         //find the max id of the icecast droplets
         try {
             $droplets = $digitalocean->droplet()->getAll();
-        } catch (Exception $e) {
-            sleep(5);
+        } catch (\Exception $e) {
+            
+            // request access token
+            $token = $this->getAccessToken();
+
+            if(empty($token))
+            {
+                return redirect('/');
+            }
+
+            session()->put('token', $token);
             $this->createDroplet($token, $streampass);
             return;
         }
@@ -172,6 +172,32 @@ class DigitalOceanController extends Controller
         $digitalocean = new DigitalOceanV2($adapter);
 
         return $digitalocean->droplet()->getById($id);
+    }
+
+    /**
+     * Get the Access Token after the code has been obtained
+     *
+     * @return bool
+     */
+    public function getAccessToken()
+    {
+        $url = 'https://cloud.digitalocean.com/v1/oauth/token?client_id=' . env('DIGITALOCEAN_KEY') . '&client_secret=' .
+            env('DIGITALOCEAN_SECRET') . '&code=' . session('code') . '&grant_type=authorization_code&redirect_uri=' . env('DIGITALOCEAN_REDIRECT_URI');
+
+        $handle = curl_init($url);
+        curl_setopt($handle, CURLOPT_POST, true);
+        curl_setopt($handle, CURLOPT_RETURNTRANSFER, 1);
+        $response = curl_exec($handle);
+        curl_close($handle);
+
+        $jsonResponse = json_decode($response, true);
+
+        if( ! isset($jsonResponse['access_token']))
+        {
+            return null;
+        }
+
+        return $jsonResponse['access_token'];
     }
 
 }
