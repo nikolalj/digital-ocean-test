@@ -108,12 +108,7 @@ class DigitalOceanController extends Controller
         }
 
         // droplet settings
-        $names = 'creek-icecast';
-        if($maxId != 0)
-        {
-            $names = $names . '-' . $maxId++;
-        }
-
+        $names = 'creek-icecast-' . $maxId++;
         $region = 'nyc1';
         $size = '512mb';
         $image = 'ubuntu-14-04-x64';
