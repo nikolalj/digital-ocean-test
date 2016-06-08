@@ -41,7 +41,8 @@ class DigitalOceanController extends Controller
         $code = $request->get('code');
 
         // request access token
-        $url = 'https://cloud.digitalocean.com/v1/oauth/token?client_id=' . env('DIGITALOCEAN_KEY') . '&client_secret=' . env('DIGITALOCEAN_SECRET') . '&code=' . $code . '&grant_type=authorization_code&redirect_uri=' . env('DIGITALOCEAN_REDIRECT_URI');
+        $url = 'https://cloud.digitalocean.com/v1/oauth/token?client_id=' . env('DIGITALOCEAN_KEY') . '&client_secret=' .
+            env('DIGITALOCEAN_SECRET') . '&code=' . $code . '&grant_type=authorization_code&redirect_uri=' . env('DIGITALOCEAN_REDIRECT_URI');
         $handle = curl_init($url);
         curl_setopt($handle, CURLOPT_POST, true);
         curl_setopt($handle, CURLOPT_RETURNTRANSFER, 1);
@@ -55,6 +56,12 @@ class DigitalOceanController extends Controller
         return view('create');
     }
 
+    /**
+     * Creates a new Droplet using the user's Access Token and Stream password
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     */
     public function create(Request $request)
     {
         $this->validate($request,[
@@ -78,7 +85,7 @@ class DigitalOceanController extends Controller
     }
 
     /**
-     * Creates a new Droplet using the user's Access Token
+     * Creates a new Droplet
      *
      * @param $token
      * @param $streampass
