@@ -107,7 +107,7 @@ class DigitalOceanController extends Controller
             }
         }
         $maxId++;
-        
+
         // droplet settings
         $names = 'creek-icecast-' . $maxId;
         $region = 'nyc1';

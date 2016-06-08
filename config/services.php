@@ -39,9 +39,4 @@ return [
         'secret' => env('STRIPE_SECRET'),
     ],
 
-    'digitalocean' => [
-        'client_id' => env('DIGITALOCEAN_KEY'),
-        'client_secret' => env('DIGITALOCEAN_SECRET'),
-        'redirect' => env('DIGITALOCEAN_REDIRECT_URI'),
-    ],
 ];
