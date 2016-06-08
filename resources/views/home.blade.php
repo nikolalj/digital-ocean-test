@@ -11,7 +11,11 @@
             <div class="row text-center">
 
                 <br>
-                Please Authorize the Application to use your Digital Ocean Account!
+                @if(session()->has('error-message'))
+                    {{ session('error-message') }}
+                @else
+                    Please Authorize the Application to use your Digital Ocean Account!
+                @endif
                 <br>
                 <br>
                 <a href="digitalocean" class="btn btn-warning" type="submit">Authorize</a>

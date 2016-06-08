@@ -78,6 +78,19 @@ class DigitalOceanController extends Controller
         //create a new droplet
         $droplet = $this->createDroplet($token, $streampass);
 
+        if(empty($droplet))
+        {
+            sleep(10);
+            \Log::info('Droplet creation failed! Trying one more time...');
+            $droplet = $this->createDroplet($token, $streampass);
+        }
+
+        if(empty($droplet))
+        {
+            session()->flash('error-message','Droplet creation failed! Please try again.');
+            return redirect('/');
+        }
+
         //wait white droplet is created and IP address is assigned to it
         while( ! count($droplet->networks))
         {
@@ -138,25 +151,11 @@ class DigitalOceanController extends Controller
 
             // create a droplet
             $droplet = $digitalocean->droplet()->create($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
-            dd($droplet);
 
             return $droplet;
 
         } catch (\Exception $e) {
-
-            sleep(5);
-            \Log::info('Create Droplet exception! Retrying...');
-
-            // request access token
-            $token = $this->getAccessToken();
-
-            if(empty($token))
-            {
-                return null;
-            }
-
-            session()->put('token', $token);
-            $this->createDroplet($token, $streampass);
+            return null;
         }
 
     }
