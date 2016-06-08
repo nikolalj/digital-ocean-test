@@ -107,7 +107,10 @@ class DigitalOceanController extends Controller
         try {
             $droplets = $digitalocean->droplet()->getAll();
         } catch (\Exception $e) {
-            
+
+            sleep(5);
+            \Log::info('Get All Droplets exception! Retrying...');
+
             // request access token
             $token = $this->getAccessToken();
 
