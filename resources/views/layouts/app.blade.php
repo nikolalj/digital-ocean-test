@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="{{ elixir("css/all.css") }}">
 </head>
 
-<body id="app-layout">
+<body id="app-layout" style="padding: 20px;">
 
     <div class="container">
         <div class="row">
