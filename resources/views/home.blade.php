@@ -8,32 +8,14 @@
 
         <div class="panel-body">
 
-            <div class="col-md-6 col-md-offset-3">
+            <div class="row text-center">
 
                 <br>
-                Please enter your DigitalOcean Personal Access Token. If you don't have one please create it <a href="https://cloud.digitalocean.com/settings/api/tokens" target="_blank">here</a>.
+                Please Authorize the Application to use your Digital Ocean Account!
                 <br>
                 <br>
+                <a href="digitalocean" class="btn btn-warning" type="submit">Authorize</a>
 
-                <form class="form-horizontal" role="form" method="POST" action="{{ url('/setup') }}">
-                    {!! csrf_field() !!}
-
-                    <!-- Auth Key Form Input -->
-                    <div class="form-group{{ $errors->has('token') ? ' has-error' : '' }}">
-                        <input placeholder="token" type="text" class="form-control" name="token" value="{{ old('token') }}">
-
-                        @if ($errors->has('token'))
-                            <span class="help-block">
-                                <strong>{{ $errors->first('token') }}</strong>
-                            </span>
-                        @endif
-                    </div>
-
-                    <!-- Setup Icecast Server -->
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-default btn-block form-control">Setup Icecast Server</button>
-                    </div>
-                </form>
             </div>
 
         </div>

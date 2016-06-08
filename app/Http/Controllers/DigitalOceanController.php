@@ -11,65 +11,80 @@ class DigitalOceanController extends Controller
 {
 
     /**
-     * Setup a new Droplet
+     * Redirect the user to the DigitalOcean authentication page.
+     *
+     * @return Response
+     */
+    public function redirectToProvider()
+    {
+        // request access code
+        $url = 'https://cloud.digitalocean.com/v1/oauth/authorize?response_type=code&client_id='
+            . env('DIGITALOCEAN_KEY') . '&redirect_uri=' . env('DIGITALOCEAN_REDIRECT_URI') . '&scope=read+write';
+
+        return redirect($url);
+    }
+
+    /**
+     * Obtain the user information from DigitalOcean.
      *
      * @param Request $request
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      */
-    public function setup(Request $request)
+    public function handleProviderCallback(Request $request)
     {
-        $this->validate($request, [
-            'token' => 'required'
+        if(! $request->has('code'))
+        {
+            return redirect('/');
+        }
+
+        // get the code
+        $code = $request->get('code');
+
+        // request access token
+        $url = 'https://cloud.digitalocean.com/v1/oauth/token?client_id=' . env('DIGITALOCEAN_KEY') . '&client_secret=' . env('DIGITALOCEAN_SECRET') . '&code=' . $code . '&grant_type=authorization_code&redirect_uri=' . env('DIGITALOCEAN_REDIRECT_URI');
+        $handle = curl_init($url);
+        curl_setopt($handle, CURLOPT_POST, true);
+        curl_setopt($handle, CURLOPT_RETURNTRANSFER, 1);
+        $response = curl_exec($handle);
+        curl_close($handle);
+
+        $jsonResponse = json_decode($response, true);
+        $token = $jsonResponse['access_token'];
+        session()->put('token', $token);
+
+        return view('create');
+    }
+
+    public function create(Request $request)
+    {
+        $this->validate($request,[
+            'streampass' => 'required',
         ]);
 
-        $token = $request->get('token');
-        $droplet = $this->createDroplet($token);
+        $streampass = $request->get('streampass');
+        $token = session('token');
 
-        if( ! empty($droplet))
+        //create a new droplet
+        $droplet = $this->createDroplet($token, $streampass);
+
+        //wait white droplet is created and IP address is assigned to it
+        while( ! count($droplet->networks))
         {
-            session()->put('token',$token);
-        }
-        else
-        {
-            abort(400,'Droplet setup failed!');
+            sleep(10);
+            $droplet = $this->getDropletById($droplet->id);
         }
 
-        //wait for the droplet to be created
-        sleep(20);
-        return redirect('stream/'.$droplet->id);
+        return view('stream', compact('droplet','streampass'));
     }
 
     /**
-     * Show the Stream link for the Droplet with the specified id
-     *
-     * @param $id
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
-    public function stream($id)
-    {
-        // check if token exists
-        if( ! session()->has('token'))
-        {
-            abort(401,'Token not found');
-        }
-
-        // create an adapter with the access token
-        $adapter = new GuzzleHttpAdapter(session('token'));
-
-        // create a digital ocean object with the previous adapter
-        $digitalocean = new DigitalOceanV2($adapter);
-
-        $droplet = $digitalocean->droplet()->getById($id);
-        return view('stream', compact('droplet'));
-    }
-
-    /**
-     * Creates a new Droplet using the user's Personal Access Token
+     * Creates a new Droplet using the user's Access Token
      *
      * @param $token
+     * @param $streampass
      * @return \DigitalOceanV2\Entity\Droplet|null
      */
-    private function createDroplet($token)
+    private function createDroplet($token, $streampass)
     {
         // create an adapter with the access token
         $adapter = new GuzzleHttpAdapter($token);
@@ -77,8 +92,25 @@ class DigitalOceanController extends Controller
         // create a digital ocean object with the previous adapter
         $digitalocean = new DigitalOceanV2($adapter);
 
+        //find the max id of the icecast droplets
+        $droplets = $digitalocean->droplet()->getAll();
+        $maxId=0;
+        foreach($droplets as $droplet)
+        {
+            $nameArray = explode('-',$droplet->name);
+            if(count($nameArray)>1 && $nameArray[1]>$maxId)
+            {
+                $maxId = $nameArray[1];
+            }
+        }
+
         // droplet settings
-        $names = 'icecast';
+        $names = 'creek-icecast';
+        if($maxId != 0)
+        {
+            $names = $names . '-' . $maxId++;
+        }
+
         $region = 'nyc1';
         $size = '512mb';
         $image = 'ubuntu-14-04-x64';
@@ -89,11 +121,30 @@ class DigitalOceanController extends Controller
         $userData = '#cloud-config
                     runcmd:
                     - apt-get -y install wget
-                    - wget -q http://r.creek.fm/icecast-server/install.sh -O icecast-install.sh; bash icecast-install.sh -p streampass';
+                    - wget -q http://r.creek.fm/icecast-server/install.sh -O icecast-install.sh; bash icecast-install.sh -p ' . $streampass;
 
         // create a droplet
         $droplet = $digitalocean->droplet()->create($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
 
         return $droplet;
+    }
+
+    /**
+     * Get Droplet by id
+     *
+     * @param $id
+     * @return \DigitalOceanV2\Entity\Droplet|null
+     */
+    private function getDropletById($id)
+    {
+        $token = session('token');
+
+        // create an adapter with the access token
+        $adapter = new GuzzleHttpAdapter($token);
+
+        // create a digital ocean object with the previous adapter
+        $digitalocean = new DigitalOceanV2($adapter);
+
+        return $digitalocean->droplet()->getById($id);
     }
 }

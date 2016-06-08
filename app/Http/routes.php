@@ -15,5 +15,8 @@ Route::get('/', function () {
     return view('home');
 });
 
-Route::post('setup','DigitalOceanController@setup');
-Route::get('stream/{id}','DigitalOceanController@stream');
+// OAuth routes
+Route::get('digitalocean', 'DigitalOceanController@redirectToProvider');
+Route::get('digitalocean/callback', 'DigitalOceanController@handleProviderCallback');
+
+Route::post('create','DigitalOceanController@create');

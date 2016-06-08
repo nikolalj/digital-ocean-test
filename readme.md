@@ -11,5 +11,6 @@ composer install
 Rename your .env.example to .env file and generate the APP_Key:
 
 ```
+mv .env.example .env
 php artisan key:generate
 ```
