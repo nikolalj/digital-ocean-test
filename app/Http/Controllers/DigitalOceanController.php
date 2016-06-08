@@ -51,6 +51,12 @@ class DigitalOceanController extends Controller
         curl_close($handle);
 
         $jsonResponse = json_decode($response, true);
+
+        if( ! isset($jsonResponse['access_token']))
+        {
+            return redirect('/');
+        }
+
         $token = $jsonResponse['access_token'];
         session()->put('token', $token);
 
