@@ -76,25 +76,7 @@ class DigitalOceanController extends Controller
         $token = session('token');
 
         //create a new droplet
-        try {
-            $droplet = $this->createDroplet($token, $streampass);
-        } catch (\Exception $e) {
-
-            sleep(5);
-            \Log::info('Create Droplet exception! Retrying...');
-
-            // request access token
-            $token = $this->getAccessToken();
-
-            if(empty($token))
-            {
-                return null;
-            }
-
-            session()->put('token', $token);
-            $this->createDroplet($token, $streampass);
-            return;
-        }
+        $droplet = $this->createDroplet($token, $streampass);
 
         //wait white droplet is created and IP address is assigned to it
         while( ! count($droplet->networks))
@@ -121,40 +103,60 @@ class DigitalOceanController extends Controller
         // create a digital ocean object with the previous adapter
         $digitalocean = new DigitalOceanV2($adapter);
 
-        //find the max id of the icecast droplets
-        $droplets = $digitalocean->droplet()->getAll();
+        try {
+            
+            //find the max id of the icecast droplets
+            $droplets = $digitalocean->droplet()->getAll();
 
-        $maxId=0;
-        foreach($droplets as $droplet)
-        {
-            if(strpos($droplet->name, 'creek-icecast') !== FALSE)
+            $maxId=0;
+            foreach($droplets as $droplet)
             {
-                $nameArray = explode('-',$droplet->name);
-                if(count($nameArray)>2 && $nameArray[2]>$maxId)
+                if(strpos($droplet->name, 'creek-icecast') !== FALSE)
                 {
-                    $maxId = $nameArray[2];
+                    $nameArray = explode('-',$droplet->name);
+                    if(count($nameArray)>2 && $nameArray[2]>$maxId)
+                    {
+                        $maxId = $nameArray[2];
+                    }
                 }
             }
-        }
-        $maxId++;
+            $maxId++;
 
-        // droplet settings
-        $names = 'creek-icecast-' . $maxId;
-        $region = 'nyc1';
-        $size = '512mb';
-        $image = 'ubuntu-14-04-x64';
-        $backups = false;
-        $ipv6 = false;
-        $privateNetworking = false;
-        $sshKeys = [];
-        $userData = '#cloud-config
+            // droplet settings
+            $names = 'creek-icecast-' . $maxId;
+            $region = 'nyc1';
+            $size = '512mb';
+            $image = 'ubuntu-14-04-x64';
+            $backups = false;
+            $ipv6 = false;
+            $privateNetworking = false;
+            $sshKeys = [];
+            $userData = '#cloud-config
                     runcmd:
                     - apt-get -y install wget
                     - wget -q http://r.creek.fm/icecast-server/install.sh -O icecast-install.sh; bash icecast-install.sh -p ' . $streampass;
 
-        // create a droplet
-        $droplet = $digitalocean->droplet()->create($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
-        return $droplet;
+            // create a droplet
+            $droplet = $digitalocean->droplet()->create($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
+            return $droplet;
+
+        } catch (\Exception $e) {
+
+            sleep(5);
+            \Log::info('Create Droplet exception! Retrying...');
+
+            // request access token
+            $token = $this->getAccessToken();
+
+            if(empty($token))
+            {
+                return null;
+            }
+
+            session()->put('token', $token);
+            $this->createDroplet($token, $streampass);
+        }
+
     }
 
     /**
