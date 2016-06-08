@@ -104,7 +104,7 @@ class DigitalOceanController extends Controller
         $digitalocean = new DigitalOceanV2($adapter);
 
         try {
-            
+
             //find the max id of the icecast droplets
             $droplets = $digitalocean->droplet()->getAll();
 
@@ -138,6 +138,11 @@ class DigitalOceanController extends Controller
 
             // create a droplet
             $droplet = $digitalocean->droplet()->create($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
+            if(empty($droplet))
+            {
+                dd($droplet);
+            }
+
             return $droplet;
 
         } catch (\Exception $e) {
