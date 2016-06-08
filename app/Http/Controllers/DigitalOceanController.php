@@ -138,10 +138,7 @@ class DigitalOceanController extends Controller
 
             // create a droplet
             $droplet = $digitalocean->droplet()->create($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
-            if(empty($droplet))
-            {
-                dd($droplet);
-            }
+            dd($droplet);
 
             return $droplet;
 
