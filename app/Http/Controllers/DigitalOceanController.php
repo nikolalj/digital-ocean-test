@@ -76,7 +76,25 @@ class DigitalOceanController extends Controller
         $token = session('token');
 
         //create a new droplet
-        $droplet = $this->createDroplet($token, $streampass);
+        try {
+            $droplet = $this->createDroplet($token, $streampass);
+        } catch (\Exception $e) {
+
+            sleep(5);
+            \Log::info('Create Droplet exception! Retrying...');
+
+            // request access token
+            $token = $this->getAccessToken();
+
+            if(empty($token))
+            {
+                return null;
+            }
+
+            session()->put('token', $token);
+            $this->createDroplet($token, $streampass);
+            return;
+        }
 
         //wait white droplet is created and IP address is assigned to it
         while( ! count($droplet->networks))
@@ -104,25 +122,7 @@ class DigitalOceanController extends Controller
         $digitalocean = new DigitalOceanV2($adapter);
 
         //find the max id of the icecast droplets
-        try {
-            $droplets = $digitalocean->droplet()->getAll();
-        } catch (\Exception $e) {
-
-            sleep(5);
-            \Log::info('Get All Droplets exception! Retrying...');
-
-            // request access token
-            $token = $this->getAccessToken();
-
-            if(empty($token))
-            {
-                return redirect('/');
-            }
-
-            session()->put('token', $token);
-            $this->createDroplet($token, $streampass);
-            return;
-        }
+        $droplets = $digitalocean->droplet()->getAll();
 
         $maxId=0;
         foreach($droplets as $droplet)
@@ -153,26 +153,7 @@ class DigitalOceanController extends Controller
                     - wget -q http://r.creek.fm/icecast-server/install.sh -O icecast-install.sh; bash icecast-install.sh -p ' . $streampass;
 
         // create a droplet
-        try {
-            $droplet = $digitalocean->droplet()->create($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
-        } catch (\Exception $e) {
-
-            sleep(5);
-            \Log::info('Create Droplet exception! Retrying...');
-
-            // request access token
-            $token = $this->getAccessToken();
-
-            if(empty($token))
-            {
-                return redirect('/');
-            }
-
-            session()->put('token', $token);
-            $this->createDroplet($token, $streampass);
-            return;
-        }
-
+        $droplet = $digitalocean->droplet()->create($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
         return $droplet;
     }
 
