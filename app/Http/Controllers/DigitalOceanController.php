@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Guzzle\Plugin\Cookie\Cookie;
+use Guzzle\Plugin\Cookie\CookieJar\ArrayCookieJar;
+use Guzzle\Plugin\Cookie\CookiePlugin;
 use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Exception\ClientException;
@@ -196,8 +198,7 @@ class DigitalOceanController extends Controller
      */
     public function getAccessToken()
     {
-        $client = new Client();
-        $client->getEmitter()->attach(new Cookie(new CookieJar()));
+        $client = new Client([ url('/') ]);
         $response = $client->request('POST', 'https://cloud.digitalocean.com/v1/oauth/token', [
             'form_params' => [
                 'client_id' => env('DIGITALOCEAN_KEY'),
