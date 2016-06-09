@@ -161,8 +161,8 @@ class DigitalOceanController extends Controller
             $droplet = $digitalocean->droplet()->create($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
             return $droplet;
 
-        } catch (\Exception $e) {
-            Log::info($this->readTitle($e->getResponse()->getBody()->getContents()));
+        } catch (\HttpException $e) {
+            Log::info($e->getMessage());
             return null;
         }
 
