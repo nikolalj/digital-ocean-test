@@ -34,6 +34,7 @@ class DigitalOceanController extends Controller
     {
         if( ! $request->has('code'))
         {
+            \Log::info($request);
             return redirect('/');
         }
 
