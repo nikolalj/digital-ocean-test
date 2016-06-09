@@ -43,7 +43,11 @@ class DigitalOceanController extends Controller
         session()->put('code', $code);
 
         // request access token
-        $token = $this->getAccessToken();
+        try {
+            $token = $this->getAccessToken();
+        } catch (\Exception $e) {
+            dd($e);
+        }
 
         if(empty($token))
         {
