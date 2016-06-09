@@ -42,13 +42,15 @@ class DigitalOceanController extends Controller
         session()->put('code', $code);
 
         // request access token
-        $token = $this->getAccessToken();
+        $response = $this->requestAccessToken();
+        $jsonResponse = json_decode($response, true);
 
-        if(empty($token))
+        if( ! isset($jsonResponse['access_token']))
         {
-            return redirect('/');
+            return $response;
         }
 
+        $token = $jsonResponse['access_token'];
         session()->put('token', $token);
 
         return view('create');
@@ -184,7 +186,7 @@ class DigitalOceanController extends Controller
      *
      * @return bool
      */
-    public function getAccessToken()
+    public function requestAccessToken()
     {
         $url = 'https://cloud.digitalocean.com/v1/oauth/token?client_id=' . env('DIGITALOCEAN_KEY') . '&client_secret=' .
             env('DIGITALOCEAN_SECRET') . '&code=' . session('code') . '&grant_type=authorization_code&redirect_uri=' . env('DIGITALOCEAN_REDIRECT_URI');
@@ -193,16 +195,9 @@ class DigitalOceanController extends Controller
         curl_setopt($handle, CURLOPT_POST, true);
         curl_setopt($handle, CURLOPT_RETURNTRANSFER, 1);
         $response = curl_exec($handle);
-        $jsonResponse = json_decode($response, true);
-
-        if( ! isset($jsonResponse['access_token']))
-        {
-            dd($response);
-            return null;
-        }
-
         curl_close($handle);
-        return $jsonResponse['access_token'];
+
+        return $response;
     }
 
 }
