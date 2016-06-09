@@ -2,11 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Guzzle\Plugin\Cookie\Cookie;
-use Guzzle\Plugin\Cookie\CookieJar\ArrayCookieJar;
-use Guzzle\Plugin\Cookie\CookiePlugin;
 use GuzzleHttp\Client;
-use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\Request;
 use DigitalOceanV2\Adapter\GuzzleHttpAdapter;
@@ -51,9 +47,8 @@ class DigitalOceanController extends Controller
         try {
             $token = $this->getAccessToken();
         } catch (ClientException $e) {
-            $response = $e->getResponse();
-            $responseBodyAsString = $response->getBody()->getContents();
-            return $responseBodyAsString;
+            \Log::info($e->getResponse()->getBody()->getContents());
+            return redirect('/');
         }
 
         if(empty($token))
@@ -62,7 +57,6 @@ class DigitalOceanController extends Controller
         }
 
         session()->put('token', $token);
-
         return view('create');
     }
 
@@ -148,7 +142,7 @@ class DigitalOceanController extends Controller
             $maxId++;
 
             // droplet settings
-            $names = 'creek-icecast-' . $maxId;
+            $names = 'creek-icecast';
             $region = 'nyc1';
             $size = '512mb';
             $image = 'ubuntu-14-04-x64';
@@ -214,7 +208,7 @@ class DigitalOceanController extends Controller
 
         if( ! isset($jsonResponse['access_token']))
         {
-            dd($response->getBody()->getContents());
+            return null;
         }
 
         return $jsonResponse['access_token'];
