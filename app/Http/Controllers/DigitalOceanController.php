@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use DigitalOceanV2\Adapter\GuzzleHttpAdapter;
 use DigitalOceanV2\DigitalOceanV2;
 use App\Http\Requests;
+use Illuminate\Support\Facades\Log;
 
 class DigitalOceanController extends Controller
 {
@@ -47,7 +48,7 @@ class DigitalOceanController extends Controller
         try {
             $token = $this->getAccessToken();
         } catch (ClientException $e) {
-            \Log::info($this->readTitle($e->getResponse()->getBody()->getContents()));
+            Log::info($this->readTitle($e->getResponse()->getBody()->getContents()));
             session()->flash('error-message','Problem in communication with DigitalOcean. Please try again.');
             return redirect('/');
         }
@@ -88,7 +89,7 @@ class DigitalOceanController extends Controller
         if(empty($droplet))
         {
             sleep(10);
-            \Log::info('Droplet creation failed! Trying one more time...');
+            Log::info('Droplet creation failed! Trying one more time...');
             $droplet = $this->createDroplet($token, $streampass);
         }
 
@@ -160,8 +161,8 @@ class DigitalOceanController extends Controller
             $droplet = $digitalocean->droplet()->create($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
             return $droplet;
 
-        } catch (ClientException $e) {
-            \Log::info($this->readTitle($e->getResponse()->getBody()->getContents()));
+        } catch (\Exception $e) {
+            Log::info($this->readTitle($e->getResponse()->getBody()->getContents()));
             return null;
         }
 
@@ -209,7 +210,7 @@ class DigitalOceanController extends Controller
 
         if( ! isset($jsonResponse['access_token']))
         {
-            \Log::info($response->getBody()->getContents());
+            Log::info($response->getBody()->getContents());
             return null;
         }
 
