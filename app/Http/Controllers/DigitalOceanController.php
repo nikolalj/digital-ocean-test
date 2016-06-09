@@ -51,6 +51,7 @@ class DigitalOceanController extends Controller
         try {
             $token = $this->getAccessToken();
         } catch (ClientException $e) {
+            dd(url('/'));
             $response = $e->getResponse();
             $responseBodyAsString = $response->getBody()->getContents();
             return $responseBodyAsString;
