@@ -27,5 +27,8 @@
     <!-- JavaScripts -->
     <script src="{{ elixir("js/all.js") }}"></script>
 
+    <!-- Scripts -->
+    @yield('scripts')
+
 </body>
 </html>

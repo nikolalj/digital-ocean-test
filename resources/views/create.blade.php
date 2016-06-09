@@ -39,3 +39,14 @@
         </div>
     </div>
 @stop
+
+@section('scripts')
+    <script type="text/javascript">
+
+        //disable button on submit
+        $('form').submit(function(){
+            $(this).find(':submit').attr('disabled','disabled');
+        });
+        
+    </script>
+@stop
