@@ -158,7 +158,6 @@ class DigitalOceanController extends Controller
 
             // create a droplet
             $droplet = $digitalocean->droplet()->create($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
-
             return $droplet;
 
         } catch (ClientException $e) {
@@ -210,6 +209,7 @@ class DigitalOceanController extends Controller
 
         if( ! isset($jsonResponse['access_token']))
         {
+            \Log::info($response->getBody()->getContents());
             return null;
         }
 
