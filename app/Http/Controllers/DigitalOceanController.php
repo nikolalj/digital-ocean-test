@@ -47,7 +47,7 @@ class DigitalOceanController extends Controller
         try {
             $token = $this->getAccessToken();
         } catch (ClientException $e) {
-            \Log::info($e->getResponse()->getHeaders());
+            \Log::info($this->readTitle($e->getResponse()->getBody()->getContents()));
             session()->flash('error-message','Problem in communication with DigitalOcean. Please try again.');
             return redirect('/');
         }
@@ -162,7 +162,7 @@ class DigitalOceanController extends Controller
             return $droplet;
 
         } catch (ClientException $e) {
-            \Log::info($e->getResponse()->getHeaders());
+            \Log::info($this->readTitle($e->getResponse()->getBody()->getContents()));
             return null;
         }
 
@@ -216,4 +216,36 @@ class DigitalOceanController extends Controller
         return $jsonResponse['access_token'];
     }
 
+    /**
+     * Extracts the title in the HTML response. If no
+     * title found return the response back
+     *
+     * @param $response
+     * @return string
+     */
+    private function readTitle($response)
+    {
+        $startsAt = strpos($response, "<title>") + strlen("<title>");
+
+        if($startsAt == false)
+        {
+            return $response;
+        }
+
+        $endsAt = strpos($response, "</title>", $startsAt);
+
+        if($endsAt == false)
+        {
+            return $response;
+        }
+
+        $result = substr($response, $startsAt, $endsAt - $startsAt);
+
+        if($result == false)
+        {
+            return $response;
+        }
+
+        return $result;
+    }
 }
