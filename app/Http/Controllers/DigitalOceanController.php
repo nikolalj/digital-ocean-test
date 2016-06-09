@@ -51,7 +51,6 @@ class DigitalOceanController extends Controller
         try {
             $token = $this->getAccessToken();
         } catch (ClientException $e) {
-            dd(url('/'));
             $response = $e->getResponse();
             $responseBodyAsString = $response->getBody()->getContents();
             return $responseBodyAsString;
@@ -199,8 +198,9 @@ class DigitalOceanController extends Controller
      */
     public function getAccessToken()
     {
-        $client = new Client([ url('/') ]);
-        $response = $client->request('POST', 'https://cloud.digitalocean.com/v1/oauth/token', [
+        $client = new Client(['base_uri' => 'https://cloud.digitalocean.com/v1/oauth/']);
+
+        $response = $client->request('POST', 'token', [
             'form_params' => [
                 'client_id' => env('DIGITALOCEAN_KEY'),
                 'client_secret' => env('DIGITALOCEAN_SECRET'),
