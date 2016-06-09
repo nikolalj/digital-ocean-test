@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use DigitalOceanV2\Adapter\GuzzleHttpAdapter;
 use DigitalOceanV2\DigitalOceanV2;
@@ -42,15 +43,13 @@ class DigitalOceanController extends Controller
         session()->put('code', $code);
 
         // request access token
-        $response = $this->requestAccessToken();
-        $jsonResponse = json_decode($response, true);
+        $token = $this->getAccessToken();
 
-        if( ! isset($jsonResponse['access_token']))
+        if(empty($token))
         {
-            return $response;
+            return redirect('/');
         }
 
-        $token = $jsonResponse['access_token'];
         session()->put('token', $token);
 
         return view('create');
@@ -186,18 +185,27 @@ class DigitalOceanController extends Controller
      *
      * @return bool
      */
-    public function requestAccessToken()
+    public function getAccessToken()
     {
-        $url = 'https://cloud.digitalocean.com/v1/oauth/token?client_id=' . env('DIGITALOCEAN_KEY') . '&client_secret=' .
-            env('DIGITALOCEAN_SECRET') . '&code=' . session('code') . '&grant_type=authorization_code&redirect_uri=' . env('DIGITALOCEAN_REDIRECT_URI');
+        $client = new Client();
+        $response = $client->request('POST', 'https://cloud.digitalocean.com/v1/oauth/token', [
+            'form_params' => [
+                'client_id' => env('DIGITALOCEAN_KEY'),
+                'client_secret' => env('DIGITALOCEAN_SECRET'),
+                'code' => session('code'),
+                'grant_type' => 'authorization_code',
+                'redirect_uri' => env('DIGITALOCEAN_REDIRECT_URI'),
+            ]
+        ]);
 
-        $handle = curl_init($url);
-        curl_setopt($handle, CURLOPT_POST, true);
-        curl_setopt($handle, CURLOPT_RETURNTRANSFER, 1);
-        $response = curl_exec($handle);
-        curl_close($handle);
+        $jsonResponse = json_decode($response->getBody()->getContents(), true);
 
-        return $response;
+        if( ! isset($jsonResponse['access_token']))
+        {
+            dd($response->getBody()->getContents());
+        }
+
+        return $jsonResponse['access_token'];
     }
 
 }
