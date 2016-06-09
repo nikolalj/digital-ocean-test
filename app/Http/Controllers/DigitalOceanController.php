@@ -48,6 +48,7 @@ class DigitalOceanController extends Controller
             $token = $this->getAccessToken();
         } catch (ClientException $e) {
             \Log::info($e->getResponse()->getBody()->getContents());
+            session()->flash('error-message','Problem in communication with DigitalOcean. Please try again.');
             return redirect('/');
         }
 
@@ -142,7 +143,7 @@ class DigitalOceanController extends Controller
             $maxId++;
 
             // droplet settings
-            $names = 'creek-icecast';
+            $names = 'creek-icecast-' . $maxId;
             $region = 'nyc1';
             $size = '512mb';
             $image = 'ubuntu-14-04-x64';
@@ -160,7 +161,8 @@ class DigitalOceanController extends Controller
 
             return $droplet;
 
-        } catch (\Exception $e) {
+        } catch (ClientException $e) {
+            \Log::info($e->getResponse()->getBody()->getContents());
             return null;
         }
 
