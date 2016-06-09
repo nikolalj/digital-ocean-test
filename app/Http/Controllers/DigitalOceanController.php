@@ -34,7 +34,7 @@ class DigitalOceanController extends Controller
     {
         if( ! $request->has('code'))
         {
-            \Log::info($request);
+            dd($request);
             return redirect('/');
         }
 
@@ -43,7 +43,13 @@ class DigitalOceanController extends Controller
         session()->put('code', $code);
 
         // request access token
-        $token = $this->getAccessToken();
+        $jsonResponse = $this->requestAccessToken();
+        if( ! isset($jsonResponse['access_token']))
+        {
+            dd($jsonResponse);
+        }
+
+        $token = $jsonResponse['access_token'];
 
         if(empty($token))
         {
@@ -185,7 +191,7 @@ class DigitalOceanController extends Controller
      *
      * @return bool
      */
-    public function getAccessToken()
+    public function requestAccessToken()
     {
         $url = 'https://cloud.digitalocean.com/v1/oauth/token?client_id=' . env('DIGITALOCEAN_KEY') . '&client_secret=' .
             env('DIGITALOCEAN_SECRET') . '&code=' . session('code') . '&grant_type=authorization_code&redirect_uri=' . env('DIGITALOCEAN_REDIRECT_URI');
@@ -198,12 +204,7 @@ class DigitalOceanController extends Controller
 
         $jsonResponse = json_decode($response, true);
 
-        if( ! isset($jsonResponse['access_token']))
-        {
-            return null;
-        }
-
-        return $jsonResponse['access_token'];
+        return $jsonResponse;
     }
 
 }
