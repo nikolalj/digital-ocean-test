@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\Request;
 use DigitalOceanV2\Adapter\GuzzleHttpAdapter;
 use DigitalOceanV2\DigitalOceanV2;
@@ -45,7 +46,7 @@ class DigitalOceanController extends Controller
         // request access token
         try {
             $token = $this->getAccessToken();
-        } catch (\Exception $e) {
+        } catch (ClientException $e) {
             dd($e->getMessage());
         }
 
