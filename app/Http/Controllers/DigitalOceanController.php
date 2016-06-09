@@ -47,7 +47,7 @@ class DigitalOceanController extends Controller
         try {
             $token = $this->getAccessToken();
         } catch (ClientException $e) {
-            \Log::info($e->getResponse()->getBody()->getContents());
+            \Log::info($e->getResponse()->getHeaders());
             session()->flash('error-message','Problem in communication with DigitalOcean. Please try again.');
             return redirect('/');
         }
@@ -162,7 +162,7 @@ class DigitalOceanController extends Controller
             return $droplet;
 
         } catch (ClientException $e) {
-            \Log::info($e->getResponse()->getBody()->getContents());
+            \Log::info($e->getResponse()->getHeaders());
             return null;
         }
 
