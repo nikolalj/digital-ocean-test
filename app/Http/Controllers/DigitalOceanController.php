@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\Request;
-use DigitalOceanV2\Adapter\GuzzleHttpAdapter;
-use DigitalOceanV2\DigitalOceanV2;
 use App\Http\Requests;
 use Illuminate\Support\Facades\Log;
 
@@ -81,16 +79,15 @@ class DigitalOceanController extends Controller
         }
 
         $streampass = $request->get('streampass');
-        $token = session('token');
 
         //create a new droplet
-        $droplet = $this->createDroplet($token, $streampass);
+        $droplet = $this->createDroplet($streampass);
 
         if(empty($droplet))
         {
             sleep(10);
             Log::info('Droplet creation failed! Trying one more time...');
-            $droplet = $this->createDroplet($token, $streampass);
+            $droplet = $this->createDroplet($streampass);
         }
 
         if(empty($droplet))
@@ -100,41 +97,35 @@ class DigitalOceanController extends Controller
         }
 
         //wait white droplet is created and IP address is assigned to it
-        while( ! count($droplet->networks))
+        while( ! count($droplet['networks']['v4']))
         {
             sleep(10);
-            $droplet = $this->getDropletById($droplet->id);
+            $droplet = $this->getDropletById($droplet['id']);
         }
 
-        return view('stream', compact('droplet','streampass'));
+        $ipAddress = $droplet['networks']['v4'][0]['ip_address'];
+        return view('stream', compact('ipAddress','streampass'));
     }
 
     /**
-     * Creates a new Droplet
+     * Create a new Droplet
      *
-     * @param $token
      * @param $streampass
-     * @return \DigitalOceanV2\Entity\Droplet|null
+     * @return mixed|null
      */
-    private function createDroplet($token, $streampass)
+    private function createDroplet($streampass)
     {
-        // create an adapter with the access token
-        $adapter = new GuzzleHttpAdapter($token);
-
-        // create a digital ocean object with the previous adapter
-        $digitalocean = new DigitalOceanV2($adapter);
-
         try {
 
             //find the max id of the icecast droplets
-            $droplets = $digitalocean->droplet()->getAll();
+            $droplets = $this->getAllDroplets();
 
             $maxId=0;
             foreach($droplets as $droplet)
             {
-                if(strpos($droplet->name, 'creek-icecast') !== FALSE)
+                if(strpos($droplet['name'], 'creek-icecast') !== FALSE)
                 {
-                    $nameArray = explode('-',$droplet->name);
+                    $nameArray = explode('-',$droplet['name']);
                     if(count($nameArray)>2 && $nameArray[2]>$maxId)
                     {
                         $maxId = $nameArray[2];
@@ -158,7 +149,7 @@ class DigitalOceanController extends Controller
                     - wget -q http://r.creek.fm/icecast-server/install.sh -O icecast-install.sh; bash icecast-install.sh -p ' . $streampass;
 
             // create a droplet
-            $droplet = $digitalocean->droplet()->create($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
+            $droplet = $this->createNewDroplet($names, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData);
             return $droplet;
 
         } catch (\Exception $e) {
@@ -166,25 +157,6 @@ class DigitalOceanController extends Controller
             return null;
         }
 
-    }
-
-    /**
-     * Get Droplet by id
-     *
-     * @param $id
-     * @return \DigitalOceanV2\Entity\Droplet|null
-     */
-    private function getDropletById($id)
-    {
-        $token = session('token');
-
-        // create an adapter with the access token
-        $adapter = new GuzzleHttpAdapter($token);
-
-        // create a digital ocean object with the previous adapter
-        $digitalocean = new DigitalOceanV2($adapter);
-
-        return $digitalocean->droplet()->getById($id);
     }
 
     /**
@@ -215,6 +187,81 @@ class DigitalOceanController extends Controller
         }
 
         return $jsonResponse['access_token'];
+    }
+
+    /**
+     * Get Droplet by id from Digital Ocean
+     *
+     * @param $id
+     * @return mixed
+     */
+    private function getDropletById($id)
+    {
+        $token = session('token');
+        $client = new Client(['base_uri' => 'https://api.digitalocean.com/v2/']);
+
+        $response = $client->request('GET', 'droplets/' . $id, [
+            'headers' => ['Authorization' => 'Bearer ' . $token],
+        ]);
+
+        $jsonResponse = json_decode($response->getBody()->getContents(), true);
+        return $jsonResponse['droplet'];
+    }
+
+    /**
+     * Get all Droplets from Digital Ocean
+     *
+     * @return bool
+     */
+    private function getAllDroplets()
+    {
+        $token = session('token');
+        $client = new Client(['base_uri' => 'https://api.digitalocean.com/v2/']);
+
+        $response = $client->request('GET', 'droplets', [
+            'headers' => ['Authorization' => 'Bearer ' . $token],
+        ]);
+
+        $jsonResponse = json_decode($response->getBody()->getContents(), true);
+        return $jsonResponse['droplets'];
+    }
+
+    /**
+     * Create a new Droplet on Digital Ocean
+     *
+     * @param $name
+     * @param $region
+     * @param $size
+     * @param $image
+     * @param $backups
+     * @param $ipv6
+     * @param $privateNetworking
+     * @param $sshKeys
+     * @param $userData
+     * @return mixed
+     */
+    private function createNewDroplet($name, $region, $size, $image, $backups, $ipv6, $privateNetworking, $sshKeys, $userData)
+    {
+        $token = session('token');
+        $client = new Client(['base_uri' => 'https://api.digitalocean.com/v2/']);
+
+        $response = $client->request('POST', 'droplets', [
+            'headers' => ['Authorization' => 'Bearer ' . $token],
+            'form_params' => [
+                'name' => $name,
+                'region' => $region,
+                'size' => $size,
+                'image' => $image,
+                'backups' => $backups,
+                'ipv6' => $ipv6,
+                'private_networking' => $privateNetworking,
+                'ssh_keys' => $sshKeys,
+                'user_data' => $userData,
+            ],
+        ]);
+
+        $jsonResponse = json_decode($response->getBody()->getContents(), true);
+        return $jsonResponse['droplet'];
     }
 
     /**

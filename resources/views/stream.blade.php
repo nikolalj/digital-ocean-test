@@ -9,7 +9,7 @@
         <div class="panel-body">
             <br>
             <div class="col-md-12">
-                Stream is available at <a href="http://{{ $droplet->networks[0]->ipAddress }}:8000/stream" target="_blank">http://{{ $droplet->networks[0]->ipAddress }}:8000/stream</a>
+                Stream is available at <a href="http://{{ $ipAddress }}:8000/stream" target="_blank">http://{{ $ipAddress }}:8000/stream</a>
                 (if the link doesn't open, please wait a minute and try again).
 
                 <br>
